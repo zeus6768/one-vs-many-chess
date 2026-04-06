@@ -31,6 +31,10 @@ type GameRoom struct {
 	voteRound      atomic.Int32 // incremented each host move; read atomically by timer goroutine
 	voteCancel     func()       // cancels the current vote timer goroutine
 	voteTimeoutMs  int
+	hostTimeoutMs  int
+
+	hostMoveStartTime time.Time
+	hostMoveCancel    func() // cancels the current host-move timer goroutine
 }
 
 // GameState is the room-level game state (wraps ChessGame output).
@@ -61,6 +65,7 @@ func NewGameRoom(id, name string, host types.Player, voteTimeoutMs int) *GameRoo
 		hostColorPref: types.ColorBlack,
 		votes:         make(map[string]types.ChessMove),
 		voteTimeoutMs: voteTimeoutMs,
+		hostTimeoutMs: voteTimeoutMs,
 	}
 }
 
@@ -128,7 +133,9 @@ func (r *GameRoom) StartGame() bool {
 }
 
 // MakeHostMove applies the host's move. Returns an error if invalid.
+// Cancels the host-move timer (if running) before applying the move.
 func (r *GameRoom) MakeHostMove(move types.ChessMove) error {
+	r.ClearHostMoveTimer()
 	if r.Game == nil || r.Status != "playing" {
 		return fmt.Errorf("game not in progress")
 	}
@@ -299,6 +306,48 @@ func (r *GameRoom) GetVoteTally() types.VoteTally {
 	}
 }
 
+// StartHostMoveTimer starts a background timer that calls onExpire after the
+// configured timeout. Cancels any previously running timer.
+func (r *GameRoom) StartHostMoveTimer(onExpire func()) {
+	r.ClearHostMoveTimer()
+	r.hostMoveStartTime = time.Now()
+
+	done := make(chan struct{})
+	r.hostMoveCancel = func() {
+		close(done)
+	}
+
+	go func() {
+		select {
+		case <-time.After(time.Duration(r.hostTimeoutMs) * time.Millisecond):
+			onExpire()
+		case <-done:
+		}
+	}()
+}
+
+// ClearHostMoveTimer cancels the running host-move timer, if any.
+func (r *GameRoom) ClearHostMoveTimer() {
+	if r.hostMoveCancel != nil {
+		r.hostMoveCancel()
+		r.hostMoveCancel = nil
+	}
+	r.hostMoveStartTime = time.Time{}
+}
+
+// GetHostTimeLeft returns the milliseconds remaining on the host-move timer.
+func (r *GameRoom) GetHostTimeLeft() int64 {
+	if r.hostMoveStartTime.IsZero() {
+		return 0
+	}
+	elapsed := time.Since(r.hostMoveStartTime).Milliseconds()
+	timeLeft := int64(r.hostTimeoutMs) - elapsed
+	if timeLeft < 0 {
+		timeLeft = 0
+	}
+	return timeLeft
+}
+
 // ToRoomInfo returns the stripped-down room info for listing.
 func (r *GameRoom) ToRoomInfo() types.RoomInfo {
 	return types.RoomInfo{
@@ -338,6 +387,13 @@ func (r *GameRoom) buildGameState() *GameState {
 	} else {
 		capturedByHost = capturedByBlack
 		capturedByChallengers = capturedByWhite
+	}
+	// Ensure non-nil so JSON serializes as [] not null — nil slices crash clients.
+	if capturedByHost == nil {
+		capturedByHost = []string{}
+	}
+	if capturedByChallengers == nil {
+		capturedByChallengers = []string{}
 	}
 
 	// Legal moves for whoever's turn it currently is.

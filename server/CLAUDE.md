@@ -36,6 +36,7 @@ Four distinct locking scopes — never hold two locks simultaneously:
 ### Goroutine patterns
 
 - **Vote timer** (`game/room.go`): `go func()` with `select` on `time.After` and a cancel channel. Uses `atomic.Int32 voteRound` as a nonce — timer captures the round on spawn; on expiry, if the round advanced, it's a no-op. This prevents stale timers from firing after the host already moved.
+- **Host-move timer** (`game/room.go`): same `select` / `done`-channel pattern without a nonce. Cancellation is always explicit via `ClearHostMoveTimer`.
 - **Grace period timer** (`manager/manager.go`): same nonce-less pattern using a `done` channel. The `timerHandle` wraps the cancel function. Fired `time.AfterFunc` calls `LeaveRoom` only if the channel hasn't been closed.
 
 ## WebSocket Event Details
@@ -68,6 +69,7 @@ Four distinct locking scopes — never hold two locks simultaneously:
 | `gameStarted` | After `startGame`, includes initial `GameState` |
 | `gameState` | After any move resolves |
 | `hostMoved` | Broadcast to challengers when host completes a move |
+| `hostTimeUpdate` | Broadcast when host's turn starts (and on reconnect); `{ timeLeftMs: number }` |
 | `voteUpdate` | Broadcast after each vote cast; includes `VoteTally` |
 | `voteResolved` | Broadcast when vote finishes; includes winning move and `GameState` |
 | `gameOver` | Game ended; includes winner, reason |

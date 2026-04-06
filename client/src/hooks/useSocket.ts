@@ -95,6 +95,7 @@ export function useSocket() {
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [voteTally, setVoteTally] = useState<VoteTally | null>(null);
   const [myVote, setMyVote] = useState<ChessMove | null>(null);
+  const [hostTimeLeft, setHostTimeLeft] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hostColorPreference, setHostColorPreference] = useState<HostColorPreference>('random');
 
@@ -128,6 +129,7 @@ export function useSocket() {
       gameState: GameState | null;
       challengers: Player[];
       voteTally: VoteTally | null;
+      hostTimeLeftMs: number | null;
     }>('reconnected', (data) => {
       setCurrentRoom(data.room);
       setPlayer(data.player);
@@ -142,6 +144,9 @@ export function useSocket() {
         const myId = data.player.id;
         const myVoteMove = data.voteTally.votes[myId];
         setMyVote(myVoteMove ?? null);
+      }
+      if (data.hostTimeLeftMs != null) {
+        setHostTimeLeft(data.hostTimeLeftMs);
       }
       setIsReconnecting(false);
     });
@@ -184,12 +189,16 @@ export function useSocket() {
       setIsGameStarted(true);
       setVoteTally(null);
       setMyVote(null);
+      setHostTimeLeft(null);
     });
 
     socket.on<GameState>('gameState', (state) => {
       setGameState(state);
       if (state.winner) {
         setVoteTally(null);
+        setHostTimeLeft(null);
+      } else if (!state.isHostTurn) {
+        setHostTimeLeft(null);
       }
     });
 
@@ -197,8 +206,13 @@ export function useSocket() {
       // gameState event follows — no extra action needed.
     });
 
+    socket.on<{ timeLeftMs: number }>('hostTimeUpdate', (data) => {
+      setHostTimeLeft(data.timeLeftMs);
+    });
+
     socket.on<VoteTally>('voteUpdate', (tally) => {
       setVoteTally(tally);
+      setHostTimeLeft(null);
     });
 
     socket.on<{ move: ChessMove; method: string }>('voteResolved', () => {
@@ -208,6 +222,7 @@ export function useSocket() {
 
     socket.on<{ winner: string; reason: string }>('gameOver', (data) => {
       setGameState(prev => prev ? { ...prev, winner: data.winner as GameState['winner'], winReason: data.reason as GameState['winReason'] } : prev);
+      setHostTimeLeft(null);
     });
 
     socket.on<HostColorPreference>('hostColorChanged', (color) => {
@@ -225,6 +240,7 @@ export function useSocket() {
         setIsGameStarted(false);
         setVoteTally(null);
         setMyVote(null);
+        setHostTimeLeft(null);
         socket.emit('getRooms');
       }
       setError(msg);
@@ -257,6 +273,7 @@ export function useSocket() {
     setIsGameStarted(false);
     setVoteTally(null);
     setMyVote(null);
+    setHostTimeLeft(null);
     ws.current?.emit('getRooms');
   }, []);
 
@@ -295,6 +312,7 @@ export function useSocket() {
     isGameStarted,
     voteTally,
     myVote,
+    hostTimeLeft,
     error,
     hostColorPreference,
     // actions

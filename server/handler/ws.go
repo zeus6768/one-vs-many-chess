@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"sync"
 
@@ -167,13 +168,20 @@ func (s *Server) handleRegister(socketID, sessionID string) {
 				voteTally = &t
 			}
 
+			var hostTimeLeftMs *int64
+			if room.Game != nil && room.Game.IsHostTurn && room.Game.Winner == "" {
+				t := room.GetHostTimeLeft()
+				hostTimeLeftMs = &t
+			}
+
 			gameState := gameStateToWire(room.Game)
 			s.hub.SendTo(socketID, "reconnected", map[string]interface{}{
-				"room":       room.ToRoomInfo(),
-				"player":     player,
-				"gameState":  gameState,
-				"challengers": room.Challengers,
-				"voteTally":  voteTally,
+				"room":           room.ToRoomInfo(),
+				"player":         player,
+				"gameState":      gameState,
+				"challengers":    room.Challengers,
+				"voteTally":      voteTally,
+				"hostTimeLeftMs": hostTimeLeftMs,
 			})
 			s.hub.BroadcastRoomExcept(room.ID, socketID, "playerReconnected", sess.SessionID)
 			log.Printf("player reconnected: %s (%s)", sess.PlayerName, sess.SessionID)
@@ -321,9 +329,13 @@ func (s *Server) handleStartGame(socketID string) {
 	s.hub.BroadcastAll("roomList", s.gm.GetWaitingRooms())
 	log.Printf("game started in room %s", room.ID)
 
-	// If challengers go first, start vote timer immediately.
+	// Start the appropriate timer for whoever moves first.
 	if !room.Game.IsHostTurn {
 		s.startVoteTimer(room)
+		s.hub.BroadcastRoom(room.ID, "voteUpdate", room.GetVoteTally())
+	} else {
+		s.startHostMoveTimer(room)
+		s.hub.BroadcastRoom(room.ID, "hostTimeUpdate", map[string]int64{"timeLeftMs": room.GetHostTimeLeft()})
 	}
 }
 
@@ -368,6 +380,7 @@ func (s *Server) handleMakeMove(socketID string, move types.ChessMove) {
 			return
 		}
 		s.startVoteTimer(room)
+		s.hub.BroadcastRoom(room.ID, "voteUpdate", room.GetVoteTally())
 	} else {
 		// Challenger casting a vote.
 		if room.Game.IsHostTurn || room.Game.Winner != "" {
@@ -409,6 +422,7 @@ func (s *Server) handleDisconnect(socketID string) {
 			if sess.IsHost {
 				if room.Status == "playing" && room.Game != nil && room.Game.Winner == "" {
 					room.ClearVoteTimer()
+					room.ClearHostMoveTimer()
 					room.Game.Winner = "challengers"
 					room.Game.WinReason = "disconnect"
 					room.Status = "finished"
@@ -465,6 +479,9 @@ func (s *Server) resolveAndBroadcast(room *game.GameRoom) {
 		})
 		room.Status = "finished"
 		s.hub.BroadcastAll("roomList", s.gm.GetWaitingRooms())
+	} else {
+		s.startHostMoveTimer(room)
+		s.hub.BroadcastRoom(room.ID, "hostTimeUpdate", map[string]int64{"timeLeftMs": room.GetHostTimeLeft()})
 	}
 }
 
@@ -487,6 +504,46 @@ func (s *Server) startVoteTimer(room *game.GameRoom) {
 		defer mu.Unlock()
 		s.resolveAndBroadcast(room)
 	})
+}
+
+// startHostMoveTimer starts the host-move timer for the given room.
+func (s *Server) startHostMoveTimer(room *game.GameRoom) {
+	room.StartHostMoveTimer(func() {
+		mu := s.getRoomMutex(room.ID)
+		mu.Lock()
+		defer mu.Unlock()
+		s.forceRandomHostMove(room)
+	})
+}
+
+// forceRandomHostMove picks a random legal move and applies it on behalf of the
+// host (called when the host-move timer expires). Must be called while holding
+// the room mutex.
+func (s *Server) forceRandomHostMove(room *game.GameRoom) {
+	if room.Game == nil || room.Game.Winner != "" || !room.Game.IsHostTurn {
+		return
+	}
+	legal := room.Game.LegalMoves
+	if len(legal) == 0 {
+		return
+	}
+	move := legal[rand.Intn(len(legal))]
+	if err := room.MakeHostMove(move); err != nil {
+		return
+	}
+	s.hub.BroadcastRoom(room.ID, "hostMoved", room.Game.LastMove)
+	s.hub.BroadcastRoom(room.ID, "gameState", gameStateToWire(room.Game))
+	if room.Game.Winner != "" {
+		s.hub.BroadcastRoom(room.ID, "gameOver", map[string]string{
+			"winner": room.Game.Winner,
+			"reason": room.Game.WinReason,
+		})
+		room.Status = "finished"
+		s.hub.BroadcastAll("roomList", s.gm.GetWaitingRooms())
+		return
+	}
+	s.startVoteTimer(room)
+	s.hub.BroadcastRoom(room.ID, "voteUpdate", room.GetVoteTally())
 }
 
 // getRoomMutex returns (or creates) the per-room mutex.

@@ -41,7 +41,7 @@ export function Board({
 
   // Legal move destinations from the selected square.
   const legalDests = selected
-    ? gameState.legalMoves.filter(m => m.from === selected).map(m => m.to)
+    ? (gameState.legalMoves ?? []).filter(m => m.from === selected).map(m => m.to)
     : [];
 
   // Vote destination counts per square.

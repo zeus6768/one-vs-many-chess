@@ -1,6 +1,8 @@
 package game
 
 import (
+	"encoding/json"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -477,6 +479,26 @@ func TestBuildGameState_Fields(t *testing.T) {
 	}
 	if len(gs.CapturedPieces.ByHost) != 0 || len(gs.CapturedPieces.ByChallengers) != 0 {
 		t.Error("expected no captured pieces at game start")
+	}
+}
+
+func TestBuildGameState_JSONNilSlices(t *testing.T) {
+	// nil slices in Go serialize as JSON null, not []. Clients that call array
+	// methods (.map, .filter, .length) on null will crash. Verify that the
+	// GameState produced at game start serializes all slice fields as [] not null.
+	r := makeRoom(0)
+	addChallenger(r, "c1", "Alice")
+	r.StartGame()
+
+	data, err := json.Marshal(r.Game)
+	if err != nil {
+		t.Fatalf("failed to marshal GameState: %v", err)
+	}
+	s := string(data)
+	for _, want := range []string{`"byHost":[]`, `"byChallengers":[]`, `"MoveHistory":[]`} {
+		if !strings.Contains(s, want) {
+			t.Errorf("expected JSON to contain %q — got null instead of []: %s", want, s)
+		}
 	}
 }
 

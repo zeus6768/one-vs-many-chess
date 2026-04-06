@@ -17,6 +17,7 @@ export default function App() {
     isGameStarted,
     voteTally,
     myVote,
+    hostTimeLeft,
     error,
     hostColorPreference,
     createRoom,
@@ -120,6 +121,7 @@ export default function App() {
           isGameStarted={isGameStarted}
           voteTally={voteTally}
           myVote={myVote}
+          hostTimeLeft={hostTimeLeft}
           hostColorPreference={hostColorPreference}
           onLeave={leaveRoom}
           onStartGame={startGame}

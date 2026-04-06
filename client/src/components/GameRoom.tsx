@@ -17,6 +17,7 @@ interface GameRoomProps {
   isGameStarted: boolean;
   voteTally: VoteTally | null;
   myVote: ChessMove | null;
+  hostTimeLeft: number | null;
   hostColorPreference: HostColorPreference;
   onLeave: () => void;
   onStartGame: () => void;
@@ -47,6 +48,7 @@ export function GameRoom({
   isGameStarted,
   voteTally,
   myVote,
+  hostTimeLeft,
   hostColorPreference,
   onLeave,
   onStartGame,
@@ -57,6 +59,7 @@ export function GameRoom({
 }: GameRoomProps) {
   const isHost = player.isHost;
   const countdown = useCountdown(voteTally?.timeLeftMs ?? null);
+  const hostCountdown = useCountdown(hostTimeLeft);
 
   const isMyTurn = gameState
     ? isHost ? gameState.isHostTurn : !gameState.isHostTurn
@@ -178,7 +181,9 @@ export function GameRoom({
     : gameState.isCheck
       ? t('check_warning')
       : gameState.isHostTurn
-        ? t('host_turn')
+        ? hostTimeLeft !== null
+          ? `${t('host_turn')} — ${hostCountdown}${t('seconds')}`
+          : t('host_turn')
         : `${t('challenger_voting')} — ${t('voting_ends_in')} ${countdown}${t('seconds')}`;
 
   return (

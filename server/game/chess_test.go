@@ -199,6 +199,20 @@ func TestCapturedPieces_Initial(t *testing.T) {
 	}
 }
 
+func TestCapturedPieces_NotNil(t *testing.T) {
+	// nil slices serialize as JSON null, not []. A client calling .map()/.length
+	// on null will crash. Verify CapturedPieces() returns non-nil slices even
+	// when no pieces have been captured.
+	g := NewChessGame()
+	w, b := g.CapturedPieces()
+	if w == nil {
+		t.Error("capturedByWhite must not be nil at game start (would serialize as JSON null)")
+	}
+	if b == nil {
+		t.Error("capturedByBlack must not be nil at game start (would serialize as JSON null)")
+	}
+}
+
 func TestCapturedPieces_AfterCapture(t *testing.T) {
 	// 1.e4 d5 2.exd5 — white captures a pawn
 	g := NewChessGame()

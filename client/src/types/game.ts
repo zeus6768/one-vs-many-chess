@@ -59,5 +59,5 @@ export const PIECE_VALUES: Record<string, number> = {
 export function materialAdvantage(captured: CapturedPieces): number {
   const sum = (pieces: string[]) =>
     pieces.reduce((acc, p) => acc + (PIECE_VALUES[p.toLowerCase()] ?? 0), 0);
-  return sum(captured.byHost) - sum(captured.byChallengers);
+  return sum(captured.byHost ?? []) - sum(captured.byChallengers ?? []);
 }
