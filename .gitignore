@@ -1,0 +1,30 @@
+client/node_modules/
+client/dist/
+server/go.sum
+.env.local
+client/.env.local
+.DS_Store
+
+# Go build artifacts
+server/one-vs-many-chess
+server/*.exe
+
+# Go test cache / coverage
+*.test
+*.out
+coverage.html
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Claude Code local state
+.claude/
+
+# Client build artifacts
+client/.vite/
+
+# Misc
+*.log
