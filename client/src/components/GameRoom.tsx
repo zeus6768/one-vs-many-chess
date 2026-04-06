@@ -184,7 +184,9 @@ export function GameRoom({
         ? hostTimeLeft !== null
           ? `${t('host_turn')} — ${hostCountdown}${t('seconds')}`
           : t('host_turn')
-        : `${t('challenger_voting')} — ${t('voting_ends_in')} ${countdown}${t('seconds')}`;
+        : voteTally
+          ? `${t('challenger_voting')} — ${t('voting_ends_in')} ${countdown}${t('seconds')}`
+          : t('challenger_voting');
 
   return (
     <div style={{
