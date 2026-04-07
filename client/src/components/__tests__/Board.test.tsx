@@ -252,4 +252,12 @@ describe('Board', () => {
     );
     expect(oneBadge).toBeDefined();
   });
+
+  it('does not crash when legalMoves is null (server may send null for empty slices)', () => {
+    // The Go server serializes nil slices as JSON null. A crash here causes a
+    // blank page for all room members.
+    expect(() =>
+      renderBoard({ legalMoves: null as unknown as GameState['legalMoves'] })
+    ).not.toThrow();
+  });
 });

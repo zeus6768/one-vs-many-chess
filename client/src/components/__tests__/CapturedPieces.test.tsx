@@ -72,6 +72,22 @@ describe('CapturedPieces', () => {
     expect(screen.getByText('captured_by_challengers')).toBeInTheDocument();
   });
 
+  it('does not crash when byHost and byChallengers are null (server may send null for empty slices)', () => {
+    // The Go server serializes nil slices as JSON null. Client code must handle
+    // null gracefully — a crash here causes a blank page for all room members.
+    const nullCaptured = { byHost: null, byChallengers: null } as unknown as CapturedPiecesType;
+    expect(() =>
+      render(
+        <CapturedPieces
+          captured={nullCaptured}
+          hostColor="white"
+          isHost
+          t={t as never}
+        />
+      )
+    ).not.toThrow();
+  });
+
   it('renders dash placeholder when host has no captures', () => {
     const { container } = render(
       <CapturedPieces

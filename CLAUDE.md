@@ -39,7 +39,7 @@ Server env vars: `PORT` (default 3001), `GRACE_PERIOD_MS` (default 30000), `VOTE
 
 **Client → Server**: `register`, `createRoom`, `joinRoom`, `leaveRoom`, `startGame`, `makeMove`, `getRooms`, `setHostColor`
 
-**Server → Client**: `sessionRegistered`, `reconnected`, `roomCreated`, `roomJoined`, `roomUpdated`, `roomList`, `playerJoined`, `playerLeft`, `playerReconnected`, `gameStarted`, `gameState`, `hostMoved`, `voteUpdate`, `voteResolved`, `gameOver`, `error`, `hostColorChanged`
+**Server → Client**: `sessionRegistered`, `reconnected`, `roomCreated`, `roomJoined`, `roomUpdated`, `roomList`, `playerJoined`, `playerLeft`, `playerReconnected`, `gameStarted`, `gameState`, `hostMoved`, `hostTimeUpdate`, `voteUpdate`, `voteResolved`, `gameOver`, `error`, `hostColorChanged`
 
 ## Turn Cycle
 

@@ -17,6 +17,7 @@ interface GameRoomProps {
   isGameStarted: boolean;
   voteTally: VoteTally | null;
   myVote: ChessMove | null;
+  hostTimeLeft: number | null;
   hostColorPreference: HostColorPreference;
   onLeave: () => void;
   onStartGame: () => void;
@@ -47,6 +48,7 @@ export function GameRoom({
   isGameStarted,
   voteTally,
   myVote,
+  hostTimeLeft,
   hostColorPreference,
   onLeave,
   onStartGame,
@@ -57,6 +59,7 @@ export function GameRoom({
 }: GameRoomProps) {
   const isHost = player.isHost;
   const countdown = useCountdown(voteTally?.timeLeftMs ?? null);
+  const hostCountdown = useCountdown(hostTimeLeft);
 
   const isMyTurn = gameState
     ? isHost ? gameState.isHostTurn : !gameState.isHostTurn
@@ -80,7 +83,7 @@ export function GameRoom({
         alignItems: 'center',
         padding: '32px 16px',
       }}>
-        <Header playerName={player.name} onLeave={onLeave} maxWidth={400} t={t} />
+        <Header roomName={room.name} onLeave={onLeave} maxWidth={400} t={t} />
 
         <div style={{
           background: THEME.colors.card,
@@ -178,8 +181,12 @@ export function GameRoom({
     : gameState.isCheck
       ? t('check_warning')
       : gameState.isHostTurn
-        ? t('host_turn')
-        : `${t('challenger_voting')} — ${t('voting_ends_in')} ${countdown}${t('seconds')}`;
+        ? hostTimeLeft !== null
+          ? `${t('host_turn')} — ${hostCountdown}${t('seconds')}`
+          : t('host_turn')
+        : voteTally
+          ? `${t('challenger_voting')} — ${t('voting_ends_in')} ${countdown}${t('seconds')}`
+          : t('challenger_voting');
 
   return (
     <div style={{
@@ -190,7 +197,7 @@ export function GameRoom({
       alignItems: 'center',
       padding: '16px',
     }}>
-      <Header playerName={player.name} onLeave={onLeave} t={t} />
+      <Header roomName={room.name} onLeave={onLeave} t={t} />
 
       {/* Status bar */}
       {statusMsg && (
@@ -276,7 +283,7 @@ export function GameRoom({
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function Header({ playerName, onLeave, maxWidth = 900, t }: { playerName: string; onLeave: () => void; maxWidth?: number; t: (k: I18nKey) => string }) {
+function Header({ roomName, onLeave, maxWidth = 900, t }: { roomName: string; onLeave: () => void; maxWidth?: number; t: (k: I18nKey) => string }) {
   return (
     <div style={{
       width: '100%',
@@ -287,7 +294,7 @@ function Header({ playerName, onLeave, maxWidth = 900, t }: { playerName: string
       marginBottom: 4,
     }}>
       <h2 style={{ color: THEME.colors.textPrimary, margin: 0, fontSize: 18, fontWeight: 700 }}>
-        {playerName}
+        {roomName}
       </h2>
       <button
         onClick={onLeave}

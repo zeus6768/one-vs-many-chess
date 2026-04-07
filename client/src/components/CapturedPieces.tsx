@@ -41,15 +41,15 @@ export function CapturedPieces({ captured, isHost, t }: CapturedPiecesProps) {
         <div style={{ color: THEME.colors.textMuted, fontSize: 11, marginBottom: 2 }}>
           {t('captured_by_host')}
         </div>
-        <PieceRow pieces={captured.byHost} />
-        {captured.byHost.length === 0 && <div style={{ color: THEME.colors.textVeryMuted, fontSize: 12 }}>—</div>}
+        <PieceRow pieces={captured.byHost ?? []} />
+        {(captured.byHost ?? []).length === 0 && <div style={{ color: THEME.colors.textVeryMuted, fontSize: 12 }}>—</div>}
       </div>
       <div>
         <div style={{ color: THEME.colors.textMuted, fontSize: 11, marginBottom: 2 }}>
           {t('captured_by_challengers')}
         </div>
-        <PieceRow pieces={captured.byChallengers} />
-        {captured.byChallengers.length === 0 && <div style={{ color: THEME.colors.textVeryMuted, fontSize: 12 }}>—</div>}
+        <PieceRow pieces={captured.byChallengers ?? []} />
+        {(captured.byChallengers ?? []).length === 0 && <div style={{ color: THEME.colors.textVeryMuted, fontSize: 12 }}>—</div>}
       </div>
       {adv !== 0 && (
         <div style={{

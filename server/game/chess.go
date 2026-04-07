@@ -214,6 +214,13 @@ func (g *ChessGame) CapturedPieces() (capturedByWhite []string, capturedByBlack 
 			}
 		}
 	}
+	// Ensure non-nil so JSON serializes as [] not null.
+	if capturedByWhite == nil {
+		capturedByWhite = []string{}
+	}
+	if capturedByBlack == nil {
+		capturedByBlack = []string{}
+	}
 	return capturedByWhite, capturedByBlack
 }
 
