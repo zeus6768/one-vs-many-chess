@@ -134,6 +134,11 @@ describe('GameRoom — pre-game', () => {
     await user.click(screen.getByText('leave_room'));
     expect(onLeave).toHaveBeenCalled();
   });
+
+  it('header shows room name', () => {
+    renderPreGame(hostPlayer, []);
+    expect(screen.getByText('Test Room')).toBeInTheDocument();
+  });
 });
 
 describe('GameRoom — pre-game participant list', () => {
@@ -144,7 +149,7 @@ describe('GameRoom — pre-game participant list', () => {
 
   it('challenger sees their own name in challenger list', () => {
     renderPreGame(challengerPlayer, [challengerPlayer]);
-    // 'Bob' appears in both the header and the player list
+    // 'Bob' appears in the player list
     expect(screen.getAllByText('Bob').length).toBeGreaterThanOrEqual(1);
   });
 

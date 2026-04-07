@@ -83,7 +83,7 @@ export function GameRoom({
         alignItems: 'center',
         padding: '32px 16px',
       }}>
-        <Header playerName={player.name} onLeave={onLeave} maxWidth={400} t={t} />
+        <Header roomName={room.name} onLeave={onLeave} maxWidth={400} t={t} />
 
         <div style={{
           background: THEME.colors.card,
@@ -197,7 +197,7 @@ export function GameRoom({
       alignItems: 'center',
       padding: '16px',
     }}>
-      <Header playerName={player.name} onLeave={onLeave} t={t} />
+      <Header roomName={room.name} onLeave={onLeave} t={t} />
 
       {/* Status bar */}
       {statusMsg && (
@@ -283,7 +283,7 @@ export function GameRoom({
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function Header({ playerName, onLeave, maxWidth = 900, t }: { playerName: string; onLeave: () => void; maxWidth?: number; t: (k: I18nKey) => string }) {
+function Header({ roomName, onLeave, maxWidth = 900, t }: { roomName: string; onLeave: () => void; maxWidth?: number; t: (k: I18nKey) => string }) {
   return (
     <div style={{
       width: '100%',
@@ -294,7 +294,7 @@ function Header({ playerName, onLeave, maxWidth = 900, t }: { playerName: string
       marginBottom: 4,
     }}>
       <h2 style={{ color: THEME.colors.textPrimary, margin: 0, fontSize: 18, fontWeight: 700 }}>
-        {playerName}
+        {roomName}
       </h2>
       <button
         onClick={onLeave}
