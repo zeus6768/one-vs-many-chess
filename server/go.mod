@@ -1,6 +1,6 @@
 module github.com/zeus/one-vs-many-chess
 
-go 1.22
+go 1.26.1
 
 require (
 	github.com/gorilla/websocket v1.5.3
