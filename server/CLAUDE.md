@@ -1,6 +1,6 @@
 # CLAUDE.md — server
 
-Go backend for one-vs-many-chess. Go 1.22, `github.com/notnil/chess`, `github.com/gorilla/websocket`.
+Go backend for one-vs-many-chess. Go 1.26.1, `github.com/notnil/chess`, `github.com/gorilla/websocket`.
 
 ## Architecture
 
